@@ -1,0 +1,440 @@
+// Supermarket.java
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.ArrayList;
+
+/*
+  نسخة مدمجة: كل الكلاسات + واجهة Swing جاهزة + زر Search.
+  حطي الملف باسم Supermarket.java و شغليه (Run).
+*/
+
+class Product {
+    private int id;
+    private String name;
+    private double price;
+    private int quantity;
+
+    public Product(int id, String name, double price, int quantity) {
+        this.id = id; this.name = name; this.price = price; this.quantity = quantity;
+    }
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public double getPrice() { return price; }
+    public int getQuantity() { return quantity; }
+    public void setName(String n) { name = n; }
+    public void setPrice(double p) { price = p; }
+    public void setQuantity(int q) { quantity = q; }
+
+    @Override
+    public String toString() {
+        return "ID:" + id + " | " + name + " | Price: " + price + " | Qty: " + quantity;
+    }
+}
+
+class Inventory {
+    private class Node {
+        Product product; Node next;
+        Node(Product p) { product = p; next = null; }
+    }
+    private Node head;
+    private int size;
+    public Inventory() { head = null; size = 0; }
+
+    public void addProduct(Product p) {
+        Node n = new Node(p);
+        if (head == null) head = n;
+        else {
+            Node cur = head;
+            while (cur.next != null) cur = cur.next;
+            cur.next = n;
+        }
+        size++;
+    }
+
+    public String getInventoryString() {
+        if (head == null) return "Inventory is empty.";
+        StringBuilder sb = new StringBuilder();
+        Node cur = head;
+        while (cur != null) {
+            sb.append(cur.product.toString()).append("\n");
+            cur = cur.next;
+        }
+        return sb.toString();
+    }
+
+    public Product findById(int id) {
+        Node cur = head;
+        while (cur != null) {
+            if (cur.product.getId() == id) return cur.product;
+            cur = cur.next;
+        }
+        return null;
+    }
+
+    public boolean updateProduct(int id, String newName, double newPrice, int newQty) {
+        Product p = findById(id);
+        if (p == null) return false;
+        p.setName(newName); p.setPrice(newPrice); p.setQuantity(newQty);
+        return true;
+    }
+
+    public boolean deleteProduct(int id) {
+        if (head == null) return false;
+        if (head.product.getId() == id) { head = head.next; size--; return true; }
+        Node prev = head; Node cur = head.next;
+        while (cur != null) {
+            if (cur.product.getId() == id) { prev.next = cur.next; size--; return true; }
+            prev = cur; cur = cur.next;
+        }
+        return false;
+    }
+
+    public boolean takeProductQuantity(int id, int qty) {
+        Product p = findById(id);
+        if (p == null) return false;
+        if (p.getQuantity() < qty) return false;
+        p.setQuantity(p.getQuantity() - qty);
+        return true;
+    }
+
+    public int getSize() { return size; }
+
+    // ======= دوال بحث جديدة =======
+    public ArrayList<Product> searchByName(String name) {
+        ArrayList<Product> result = new ArrayList<>();
+        Node cur = head;
+        while (cur != null) {
+            if (cur.product.getName().toLowerCase().contains(name.toLowerCase()))
+                result.add(cur.product);
+            cur = cur.next;
+        }
+        return result;
+    }
+
+    public ArrayList<Product> searchByPrice(double price) {
+        ArrayList<Product> result = new ArrayList<>();
+        Node cur = head;
+        while (cur != null) {
+            if (cur.product.getPrice() == price)
+                result.add(cur.product);
+            cur = cur.next;
+        }
+        return result;
+    }
+}
+
+class CheckoutQueue {
+    private Customer[] data;
+    private int front, rear, count;
+    public CheckoutQueue(int capacity) {
+        data = new Customer[capacity]; front = 0; rear = 0; count = 0;
+    }
+    public boolean enqueue(Customer c) {
+        if (count == data.length) return false;
+        data[rear] = c;
+        rear = (rear + 1) % data.length;
+        count++;
+        return true;
+    }
+    public Customer dequeue() {
+        if (count == 0) return null;
+        Customer c = data[front];
+        data[front] = null;
+        front = (front + 1) % data.length;
+        count--;
+        return c;
+    }
+    public int size() { return count; }
+}
+
+class Customer {
+    private int id; private String name; private ArrayList<CartItem> cart;
+    public Customer(int id, String name) { this.id = id; this.name = name; cart = new ArrayList<>(); }
+    public int getId() { return id; } public String getName() { return name; }
+    public void addToCart(Product p, int qty) { cart.add(new CartItem(p, qty)); }
+    public ArrayList<CartItem> getCart() { return cart; }
+
+    static class CartItem {
+        Product product; int quantity;
+        CartItem(Product product, int quantity) { this.product = product; this.quantity = quantity; }
+    }
+}
+
+class Order {
+    private int orderId; private Customer customer; private ArrayList<Customer.CartItem> items; private double total;
+    public Order(int orderId, Customer customer, ArrayList<Customer.CartItem> items) {
+        this.orderId = orderId; this.customer = customer; this.items = items; this.total = calculateTotal();
+    }
+    private double calculateTotal() {
+        double sum = 0;
+        for (Customer.CartItem it : items) sum += it.product.getPrice() * it.quantity;
+        return sum;
+    }
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Order ID: ").append(orderId).append(" | Customer: ").append(customer.getName()).append("\n");
+        for (Customer.CartItem it : items) {
+            sb.append("- ").append(it.product.getName()).append(" x ").append(it.quantity)
+              .append(" = ").append(it.product.getPrice() * it.quantity).append("\n");
+        }
+        sb.append("Total: ").append(total).append("\n");
+        return sb.toString();
+    }
+    public double getTotal() { return total; }
+}
+
+class IDGenerator {
+    private static int productId = 100; private static int customerId = 1; private static int orderId = 1;
+    public static int nextProductId() { return productId++; }
+    public static int nextCustomerId() { return customerId++; }
+    public static int nextOrderId() { return orderId++; }
+}
+
+public class Supermarket extends JFrame {
+    private Inventory inventory;
+    private CheckoutQueue queue;
+    private ArrayList<Order> completedOrders;
+
+    private JTextArea outputArea;
+    private JLabel queueLabel;
+
+    public Supermarket() {
+        inventory = new Inventory();
+        queue = new CheckoutQueue(10);
+        completedOrders = new ArrayList<>();
+        seedDemoProducts();
+
+        setTitle("Supermarket System - GUI");
+        setSize(750, 500);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout(10,10));
+
+        // Left panel with colored buttons
+        JPanel left = new JPanel();
+        left.setLayout(new GridLayout(11,1,5,5));
+        left.setBackground(new Color(178, 34, 34)); // احمر غامق
+
+        JButton btnAdd = createButton("Add Product", new Color(255, 99, 71));
+        JButton btnPrintInv = createButton("Print Inventory", new Color(255, 140, 0));
+        JButton btnUpdate = createButton("Update Product", new Color(255, 165, 0));
+        JButton btnDelete = createButton("Delete Product", new Color(220, 20, 60));
+        JButton btnSearch = createButton("Search Product", new Color(255, 69, 0));
+        JButton btnShop = createButton("Customer Shopping", new Color(255, 105, 180));
+        JButton btnProcess = createButton("Process Checkout", new Color(199, 21, 133));
+        JButton btnPrintOrders = createButton("Print Completed Orders", new Color(255, 0, 0));
+        JButton btnClear = createButton("Clear Output", new Color(255, 20, 147));
+        JButton btnExit = createButton("Exit", new Color(178, 34, 34));
+
+        queueLabel = new JLabel("Queue: 0", SwingConstants.CENTER);
+        queueLabel.setForeground(Color.WHITE);
+        queueLabel.setFont(new Font("Arial", Font.BOLD, 14));
+
+        left.add(btnAdd); left.add(btnPrintInv); left.add(btnUpdate); left.add(btnDelete);
+        left.add(btnSearch); left.add(btnShop); left.add(btnProcess); left.add(btnPrintOrders);
+        left.add(btnClear); left.add(btnExit); left.add(queueLabel);
+
+        outputArea = new JTextArea();
+        outputArea.setEditable(false);
+        outputArea.setBackground(new Color(250, 240, 230));
+        outputArea.setForeground(new Color(25, 25, 112));
+        outputArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        JScrollPane scroll = new JScrollPane(outputArea);
+
+        add(left, BorderLayout.WEST);
+        add(scroll, BorderLayout.CENTER);
+
+        // Actions
+        btnAdd.addActionListener(e -> addProductGUI());
+        btnPrintInv.addActionListener(e -> printInventoryGUI());
+        btnUpdate.addActionListener(e -> updateProductGUI());
+        btnDelete.addActionListener(e -> deleteProductGUI());
+        btnSearch.addActionListener(e -> searchProductGUI());
+        btnShop.addActionListener(e -> customerShoppingGUI());
+        btnProcess.addActionListener(e -> processCheckoutGUI());
+        btnPrintOrders.addActionListener(e -> printOrdersGUI());
+        btnClear.addActionListener(e -> outputArea.setText(""));
+        btnExit.addActionListener(e -> System.exit(0));
+    }
+
+    private JButton createButton(String text, Color color) {
+        JButton btn = new JButton(text);
+        btn.setBackground(color);
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setFont(new Font("Arial", Font.BOLD, 12));
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) { btn.setBackground(btn.getBackground().brighter()); }
+            public void mouseExited(java.awt.event.MouseEvent evt) { btn.setBackground(color); }
+        });
+        return btn;
+    }
+
+    private void seedDemoProducts() {
+        inventory.addProduct(new Product(IDGenerator.nextProductId(), "Milk", 1.5, 50));
+        inventory.addProduct(new Product(IDGenerator.nextProductId(), "Bread", 0.8, 30));
+        inventory.addProduct(new Product(IDGenerator.nextProductId(), "Eggs", 0.15, 200));
+    }
+
+    private void addProductGUI() {
+        JTextField name = new JTextField();
+        JTextField price = new JTextField();
+        JTextField qty = new JTextField();
+        Object[] fields = {"Name:", name, "Price:", price, "Quantity:", qty};
+        int option = JOptionPane.showConfirmDialog(this, fields, "Add Product", JOptionPane.OK_CANCEL_OPTION);
+        if (option == JOptionPane.OK_OPTION) {
+            try {
+                Product p = new Product(IDGenerator.nextProductId(),
+                        name.getText(),
+                        Double.parseDouble(price.getText()),
+                        Integer.parseInt(qty.getText()));
+                inventory.addProduct(p);
+                append("Product added: " + p.toString());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Invalid input!");
+            }
+        }
+    }
+
+    private void printInventoryGUI() {
+        append("--- Inventory ---");
+        append(inventory.getInventoryString());
+    }
+
+    private void updateProductGUI() {
+        String idStr = JOptionPane.showInputDialog(this, "Enter Product ID to update:");
+        if (idStr == null) return;
+        try {
+            int id = Integer.parseInt(idStr);
+            Product p = inventory.findById(id);
+            if (p == null) { JOptionPane.showMessageDialog(this, "Product not found."); return; }
+            JTextField name = new JTextField(p.getName());
+            JTextField price = new JTextField(String.valueOf(p.getPrice()));
+            JTextField qty = new JTextField(String.valueOf(p.getQuantity()));
+            Object[] fields = {"New Name:", name, "New Price:", price, "New Quantity:", qty};
+            int option = JOptionPane.showConfirmDialog(this, fields, "Update Product", JOptionPane.OK_CANCEL_OPTION);
+            if (option == JOptionPane.OK_OPTION) {
+                inventory.updateProduct(id, name.getText(),
+                        Double.parseDouble(price.getText()),
+                        Integer.parseInt(qty.getText()));
+                append("Product updated: " + inventory.findById(id).toString());
+            }
+        } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Invalid input."); }
+    }
+
+    private void deleteProductGUI() {
+        String idStr = JOptionPane.showInputDialog(this, "Enter Product ID to delete:");
+        if (idStr == null) return;
+        try {
+            boolean ok = inventory.deleteProduct(Integer.parseInt(idStr));
+            append(ok ? "Product deleted." : "Product not found.");
+        } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Invalid input."); }
+    }
+
+    // ======= Search GUI المعدل =======
+    private void searchProductGUI() {
+        String[] options = {"ID", "Name", "Price"};
+        String choice = (String) JOptionPane.showInputDialog(this, 
+                "Select search type:", "Search Product",
+                JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+        if (choice == null) return;
+
+        String input = JOptionPane.showInputDialog(this, "Enter " + choice + " to search:");
+        if (input == null) return;
+
+        try {
+            if (choice.equals("ID")) {
+                int id = Integer.parseInt(input);
+                Product p = inventory.findById(id);
+                append(p != null ? "Search result: " + p.toString() : "Product not found.");
+            } else if (choice.equals("Name")) {
+                ArrayList<Product> results = inventory.searchByName(input);
+                if (results.isEmpty()) append("No products found with name containing: " + input);
+                else {
+                    append("--- Search Results by Name ---");
+                    for (Product p : results) append(p.toString());
+                }
+            } else if (choice.equals("Price")) {
+                double price = Double.parseDouble(input);
+                ArrayList<Product> results = inventory.searchByPrice(price);
+                if (results.isEmpty()) append("No products found with price: " + price);
+                else {
+                    append("--- Search Results by Price ---");
+                    for (Product p : results) append(p.toString());
+                }
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Invalid input!");
+        }
+    }
+
+    private void customerShoppingGUI() {
+        String cname = JOptionPane.showInputDialog(this, "Customer name:");
+        if (cname == null) return;
+        Customer c = new Customer(IDGenerator.nextCustomerId(), cname);
+        boolean shopping = true;
+        while (shopping) {
+            String pidStr = JOptionPane.showInputDialog(this, "Enter Product ID to add to cart (0 to finish):\nCurrent Inventory shown in Output window.");
+            if (pidStr == null) break;
+            int pid = Integer.parseInt(pidStr);
+            if (pid == 0) break;
+            Product p = inventory.findById(pid);
+            if (p == null) { JOptionPane.showMessageDialog(this, "Product not found."); continue; }
+            String qtyStr = JOptionPane.showInputDialog(this, "Quantity:");
+            if (qtyStr == null) continue;
+            int qty = Integer.parseInt(qtyStr);
+            if (qty <= 0) { JOptionPane.showMessageDialog(this, "Quantity must be > 0."); continue; }
+            if (p.getQuantity() < qty) { JOptionPane.showMessageDialog(this, "Not enough stock."); continue; }
+            c.addToCart(p, qty);
+            append("Added to cart: " + p.getName() + " x " + qty);
+        }
+        boolean enqueued = queue.enqueue(c);
+        append(enqueued ? "Customer added to checkout queue. (ID: " + c.getId() + ")" : "Queue full. Try later.");
+        updateQueueLabel();
+    }
+
+    private void processCheckoutGUI() {
+        Customer c = queue.dequeue();
+        if (c == null) { append("No customers in queue."); updateQueueLabel(); return; }
+        ArrayList<Customer.CartItem> items = c.getCart();
+        boolean allAvailable = true;
+        for (Customer.CartItem it : items) {
+            Product p = inventory.findById(it.product.getId());
+            if (p == null || p.getQuantity() < it.quantity) { allAvailable = false; break; }
+        }
+        if (!allAvailable) {
+            append("Cannot process checkout. Some items not available.");
+            return;
+        }
+        for (Customer.CartItem it : items) inventory.takeProductQuantity(it.product.getId(), it.quantity);
+        Order order = new Order(IDGenerator.nextOrderId(), c, items);
+        completedOrders.add(order);
+        append("Checkout processed. Order details:");
+        append(order.toString());
+        updateQueueLabel();
+    }
+
+    private void printOrdersGUI() {
+        if (completedOrders.isEmpty()) { append("No completed orders yet."); return; }
+        append("--- Completed Orders ---");
+        for (Order o : completedOrders) append(o.toString());
+    }
+
+    private void append(String s) {
+        outputArea.append(s + "\n");
+        outputArea.setCaretPosition(outputArea.getDocument().getLength());
+    }
+
+    private void updateQueueLabel() {
+        queueLabel.setText("Queue: " + queue.size());
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            Supermarket gui = new Supermarket();
+            gui.setVisible(true);
+        });
+    }
+}

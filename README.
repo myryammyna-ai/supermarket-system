@@ -1,0 +1,43 @@
+# Supermarket Management System
+
+## 📌 Overview
+A desktop application developed using **Java OOP** and **Swing GUI** to manage supermarket products efficiently.  
+The system enables users to add, update, search, and delete product information through a simple and user-friendly graphical interface.
+
+---
+
+## 🚀 Features
+- Add new products with ID, name, price, and quantity  
+- Update existing product details  
+- Search for products easily  
+- Delete products from the system  
+- User-friendly **GUI interface using Java Swing**
+
+---
+
+## 🛠️ Technologies Used
+- Java  
+- Object-Oriented Programming (OOP)  
+- Java Swing (GUI)  
+- Git & GitHub for version control  
+
+---
+
+## 👥 Team Project
+This project was developed as a **group project**.  
+My contribution included:
+- Participating in system design and implementation  
+- Working on product management logic and GUI components  
+- Using **Git & GitHub** to manage and upload the project  
+
+---
+
+## 📂 How to Run
+1. Clone or download the repository  
+2. Open the project in **Visual Studio Code** or any Java IDE  
+3. Compile and run the main Java file  
+
+---
+
+## 👩‍💻 Author
+**Meriam Mina**
